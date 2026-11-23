@@ -6,6 +6,8 @@ const http = require("node:http");
 const path = require("node:path");
 const { DatabaseSync } = require("node:sqlite");
 const { WikimediaCommonsAdapter } = require("./wikimedia-provider");
+const { ZephyrScaleService } = require("./zephyr-service");
+const { createZephyrApiHandler } = require("./zephyr-routes");
 
 const ROOT = __dirname;
 const DATA_DIR = path.resolve(process.env.STRIDE_DATA_DIR || path.join(ROOT, "data"));
@@ -568,9 +570,9 @@ function imageReport() {
   };
 }
 
-function requireAdmin(request, response) {
+function requireAdmin(request, response, area = "Image administration") {
   if (!ADMIN_TOKEN_CONFIGURED) {
-    sendJson(response, 503, { error: "Image administration is disabled. Configure a STRIDE_ADMIN_TOKEN of at least 32 characters on the server." });
+    sendJson(response, 503, { error: `${area} is disabled. Configure a STRIDE_ADMIN_TOKEN of at least 32 characters on the server.` });
     return false;
   }
   const supplied = (request.headers.authorization || "").replace(/^Bearer\s+/i, "");
@@ -613,6 +615,13 @@ async function readJson(request) {
     throw error;
   }
 }
+
+const handleZephyrApi = createZephyrApiHandler({
+  service: new ZephyrScaleService(),
+  authorize: (request, response) => requireAdmin(request, response, "Zephyr integration"),
+  readJson,
+  sendJson
+});
 
 function catalogNames(shoe, variant) {
   return {
@@ -776,6 +785,9 @@ async function handleApi(request, response, requestUrl) {
   }
   if (pathname === "/api/image-admin/report" && request.method === "GET") {
     return sendJson(response, 200, imageReport());
+  }
+  if (pathname.startsWith("/api/zephyr/")) {
+    return handleZephyrApi(request, response, requestUrl);
   }
   if (pathname === "/api/catalog" && request.method === "PUT") {
     const payload = await readJson(request);

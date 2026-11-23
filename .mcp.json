@@ -1,15 +1,16 @@
 {
-	"mcpServers": {
-		"playwright-test": {
-			"type": "stdio",
-			"command": "npx",
-			"args": [
-				"playwright",
-				"run-test-mcp-server"
-			],
-			"tools": [
-				"*"
-			]
-		}
-	}
+  "mcpServers": {
+    "smartbear-zephyr": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "./node_modules/@smartbear/mcp/dist/index.js"
+      ],
+      "env": {
+        "ZEPHYR_API_TOKEN": "${env:ZEPHYR_API_TOKEN}",
+        "ZEPHYR_BASE_URL": "https://eu.api.zephyrscale.smartbear.com/v2",
+        "MCP_CLIENTS": "Zephyr"
+      }
+    }
+  }
 }
