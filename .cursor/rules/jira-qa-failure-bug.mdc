@@ -1,0 +1,43 @@
+---
+description: Required fields and attachment steps when auto-creating Jira Bugs from QA test failures
+alwaysApply: true
+---
+
+# Jira QA Failure Bug Creation
+
+When creating a Jira Bug after a Zephyr/Playwright test failure (including dummy/workflow-validation Bugs), complete **all** of the following before reporting done. Do not treat a description mention of a screenshot path as an attachment.
+
+## 1. Attach the failure screenshot to the Bug
+
+- Upload the genuine local failure PNG to the Bug **Attachments** section.
+- Prefer Atlassian MCP `uploadAttachmentToJiraIssue` via `executeWrite` (two-phase):
+  1. Call with `issueIdOrKey` + absolute `filePath` → run returned `uploadCommand` in shell → capture `data.id` as `fileId`.
+  2. Call again with `issueIdOrKey` + `fileId` to attach as a standalone file.
+- Verify with `getJiraIssue` using `fields: ["attachment"]` that the filename appears (id, filename, size, mimeType).
+- Never substitute path-only text in the description for a real attachment.
+
+## 2. Set Parent
+
+- Set **Parent** to the related User Story when Jira hierarchy allows.
+- If Jira rejects that Parent (peer issue types), look up the story’s Parent Epic and set that Epic as Parent.
+- Always keep a Relates (or equivalent) link to the related story/epic when Parent alone is insufficient or as an additional coverage link.
+- In this project, **SCRUM-5 is an Epic**, so Bugs may use Parent `SCRUM-5` directly when that is the related work item.
+
+## 3. Set Start date
+
+- Set **Start date** (`customfield_10015` / field name `Start date`) to the execution date as `YYYY-MM-DD`.
+- Use `editJiraIssue` / `createJiraIssue` `additional_fields` or `fields` with that value.
+
+## 4. Set Sprint
+
+- Assign the Bug to the currently **active** Sprint on the SCRUM board.
+- Prefer copying the related story/epic’s active Sprint when present.
+- On create: `createJiraIssue` with `assignToSprint: "active"` or the numeric sprint id/name.
+- On existing issues: `manageJiraSprint` with `action: "addIssues"`, the active `sprintId`, and `issueIdsOrKeys`.
+- Do not create, start, or close sprints as part of failure-Bug creation.
+
+## 5. Safety and linking (unchanged)
+
+- Keep Zephyr test-case and execution issue links.
+- For intentional dummy/workflow Bugs, use label `qa-automation-dummy` and clear DUMMY labeling in the summary/description.
+- Do not modify protected regression cases (e.g. SCRUM-T28–T53) or cycle SCRUM-R1 unless the user explicitly asks.
